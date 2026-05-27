@@ -10,9 +10,13 @@ import asyncio
 import subprocess
 from typing import Optional
 
+import edge_tts
 import requests
 
 from src.config import Config
+
+# 单次合成文本上限（chars），超长文本走分段
+MAX_TEXT_LENGTH = 5000
 
 
 class TTSBase:
@@ -25,26 +29,35 @@ class TTSBase:
 
 class EdgeTTS(TTSBase):
     """Edge-TTS（微软免费 TTS）"""
+
     name = "edge-tts"
 
     def __init__(self, voice: str = "zh-CN-XiaoyiNeural"):
         self.voice = voice
 
     async def synthesize(self, text: str, output_path: str) -> bool:
-        proc = await asyncio.create_subprocess_exec(
-            sys.executable, "-m", "edge_tts",
-            "--voice", self.voice,
-            "--text", text,
-            "--write-media", output_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        await proc.communicate()
-        return proc.returncode == 0
+        if len(text) > MAX_TEXT_LENGTH:
+            print(
+                f"[EdgeTTS] 文本过长 ({len(text)} chars) 超过上限 {MAX_TEXT_LENGTH}，请分段发送",
+                file=sys.stderr,
+            )
+            return False
+
+        try:
+            communicate = edge_tts.Communicate(text, self.voice)
+            await asyncio.wait_for(communicate.save(output_path), timeout=120)
+            return os.path.exists(output_path) and os.path.getsize(output_path) > 100
+        except asyncio.TimeoutError:
+            print("[EdgeTTS] 语音合成超时", file=sys.stderr)
+            return False
+        except Exception as e:
+            print(f"[EdgeTTS] 合成失败: {e}", file=sys.stderr)
+            return False
 
 
 class VolcTTS(TTSBase):
     """火山引擎 TTS V3（豆包语音大模型）"""
+
     name = "volc"
 
     API_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
@@ -55,6 +68,13 @@ class VolcTTS(TTSBase):
         self.speaker = speaker
 
     async def synthesize(self, text: str, output_path: str) -> bool:
+        if len(text) > MAX_TEXT_LENGTH:
+            print(
+                f"[VolcTTS] 文本过长 ({len(text)} chars) 超过上限 {MAX_TEXT_LENGTH}，请分段发送",
+                file=sys.stderr,
+            )
+            return False
+
         payload = {
             "req_params": {
                 "text": text,
@@ -82,7 +102,7 @@ class VolcTTS(TTSBase):
                 json=payload,
                 headers=headers,
                 stream=True,
-                timeout=60,
+                timeout=(15, 60),
             )
             resp.raise_for_status()
 
@@ -115,12 +135,15 @@ class VolcTTS(TTSBase):
                 f.write(b"".join(audio_parts))
             return True
 
+        except requests.Timeout:
+            print("[VolcTTS] 请求超时", file=sys.stderr)
+            return False
         except requests.RequestException as e:
             print(f"[VolcTTS] 请求失败: {e}", file=sys.stderr)
             if hasattr(e, "response") and e.response is not None:
                 print(f"  响应: {e.response.text[:300]}", file=sys.stderr)
             return False
-        except (json.JSONDecodeError, ValueError, base64.binascii.Error) as e:
+        except (json.JSONDecodeError, ValueError) as e:
             print(f"[VolcTTS] 解析失败: {e}", file=sys.stderr)
             return False
 
@@ -150,6 +173,23 @@ def convert_to_opus(mp3_path: str, ffmpeg_path: str) -> Optional[str]:
     return ogg_path if result.returncode == 0 else None
 
 
-def estimate_ogg_duration_ms(ogg_path: str) -> int:
-    """基于文件大小估算 OGG 时长（opus 24kbps ≈ 3KB/s）"""
+def get_ogg_duration_ms(ogg_path: str, ffmpeg_path: str = "ffmpeg") -> int:
+    """
+    获取 OGG 文件实际时长（ms）。
+    优先用 ffprobe 精确读取，失败则按文件大小估算（opus 24kbps ≈ 3KB/s）。
+    """
+    # 尝试 ffprobe 精确读取
+    ffprobe_path = ffmpeg_path.replace("ffmpeg", "ffprobe") if ffmpeg_path != "ffmpeg" else "ffprobe"
+    try:
+        result = subprocess.run(
+            [ffprobe_path, "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", ogg_path],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return int(float(result.stdout.strip()) * 1000)
+    except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+        pass
+
+    # 降级：文件大小估算
     return int(max(1, os.path.getsize(ogg_path) / 3000) * 1000)

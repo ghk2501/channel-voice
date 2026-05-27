@@ -1,4 +1,4 @@
-# Echo Voice 部署引导 — AI Agent 执行手册
+# Channel Voice 部署引导 — AI Agent 执行手册
 
 AI Agent 按此文档步骤引导用户完成配置。
 
@@ -15,38 +15,37 @@ AI Agent 按此文档步骤引导用户完成配置。
 
 ## 第二步：配置飞书应用
 
-先问用户：**你已经有飞书应用了吗？**
+核心就是三个值：**APP_ID**、**APP_SECRET**、**CHAT_ID**
+
+问用户：**你已经有飞书应用了吗？**
 
 **已有应用：**
-1. 打开 https://open.feishu.cn/app ，找到已有应用
-2. 在「凭证与基础信息」中获取 **App ID** 和 **App Secret**
-3. 检查「权限管理」中是否已开启 `im:message:send_as_bot` 权限（没有则开启）
-4. 跳转到第7步（添加机器人到群聊）
+- 打开 https://open.feishu.cn/app → 点开已有应用
+- 「凭证与基础信息」→ 复制 **App ID** 和 **App Secret**
 
-**没有应用（新建）：**
-1. 打开 https://open.feishu.cn/app
-2. 点击「创建企业自建应用」，填写名称
-3. 在「凭证与基础信息」中获取 **App ID** 和 **App Secret**
-4. 在「权限管理」中开启 `im:message:send_as_bot` 权限
-5. 在「安全设置」中设置 IP 白名单（开发测试可设 `0.0.0.0/0`）
-6. 「版本管理与发布」→ 创建版本 → 提交发布 → 审批
-7. 在飞书中建群（或使用已有群），群设置 → 机器人 → 添加机器人 → 选择刚创建的应用
-8. 群里发条消息后，获取 Chat ID：
+**新建应用：**
+- 打开 https://open.feishu.cn/app
+- 点「创建企业自建应用」→ 填名称创建
+- 「凭证与基础信息」→ 复制 **App ID** 和 **App Secret**
+- 默认权限就够用，无需额外配置
 
-```bash
-# 获取 token
-curl -X POST 'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal' \
-  -H 'Content-Type: application/json' \
-  -d '{"app_id":"<APP_ID>","app_secret":"<APP_SECRET>"}'
+**获取 CHAT_ID：**
+1. 在飞书中建个群（或用已有群）
+2. 群设置 → 添加机器人 → 选择刚创建的应用
+3. 群里发条消息
+4. 获取 Chat ID：
+   ```bash
+   # 获取 token
+   curl -X POST 'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal' \
+     -H 'Content-Type: application/json' \
+     -d '{"app_id":"<APP_ID>","app_secret":"<APP_SECRET>"}'
+   
+   # 获取群列表，找到目标群的 chat_id（oc_ 开头）
+   curl 'https://open.feishu.cn/open-apis/im/v1/chats' \
+     -H 'Authorization: Bearer <TOKEN>'
+   ```
 
-# 获取群列表，找到目标群的 chat_id
-curl 'https://open.feishu.cn/open-apis/im/v1/chats' \
-  -H 'Authorization: Bearer <TOKEN>'
-
-# 或直接通过群分享链接获取： https://open.feishu.cn/open-apis/im/v1/chats/<chat_id>
-```
-
-9. AI 自动写入：
+AI 自动写入：
 ```bash
 python setup.py write APP_ID=cli_xxx
 python setup.py write APP_SECRET=xxx
@@ -103,7 +102,7 @@ python setup.py test
 
 # 完整流程：生成 → 转码 → 发送飞书
 pip install -r requirements.txt
-python speak.py "配置完成，语音播报已上线"
+python speak.py "配置完成，语音消息已上线"
 ```
 
 确认飞书群收到语音消息 → 告诉用户配置完成。

@@ -1,12 +1,18 @@
-# Echo Voice
+# Channel Voice
 
-让不支持语音消息的 AI Agent 频道（飞书等）拥有 TTS 语音播报能力。
+> Let Agent Speak In Channel
+
+让不支持语音消息的 AI Agent 频道（飞书等）拥有 TTS 语音消息能力。
+
+[![Python](https://img.shields.io/badge/python-%3E%3D3.8-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![TTS](https://img.shields.io/badge/TTS-Edge--TTS%20%7C%20Volcengine-orange)](https://github.com/)
 
 ---
 
 ## 如果你是 AI Agent（Claude Code 等），请读这里
 
-用户发这个链接给你，是想让你帮他配置语音播报。按以下流程执行。
+用户发这个链接给你，是想让你帮他配置语音消息推送。按以下流程执行。
 
 ### 先确认
 
@@ -18,7 +24,7 @@
 
 2. **飞书应用的凭证？**
    - **已有应用** → 去 https://open.feishu.cn/app → 找到应用 → 「凭证与基础信息」拿 App ID 和 App Secret
-   - **没有应用** → 按下方「飞书配置详细步骤」新建
+   - **没有应用** → 按下方「飞书配置步骤」新建
    - 两种都需要 CHAT_ID（机器人所在群聊的 ID）
 
 3. **FFmpeg 路径？**
@@ -48,31 +54,33 @@ python setup.py check
 python setup.py test
 
 # 完整测试：生成语音 → 转码 → 发送飞书
-python speak.py "配置完成，语音播报已上线"
+python speak.py "配置完成，语音消息已上线"
 ```
 
 确认飞书群里收到了语音消息，告诉用户：**配置完成，以后在频道里可直接发送语音消息。**
 
-### 飞书配置详细步骤
+### 飞书配置步骤
 
-引导用户：
+核心就是三个值：**APP_ID**、**APP_SECRET**、**CHAT_ID**
 
-1. 打开 https://open.feishu.cn/app ，点击「创建企业自建应用」
-2. 填写应用名称，创建
-3. 在左侧「凭证与基础信息」中，拿到 **App ID** 和 **App Secret**
-4. 在左侧「权限管理」→ 搜索并开启 `im:message:send_as_bot`（发送消息权限）
-5. 在左侧「安全设置」→ 设置 IP 白名单为 `0.0.0.0/0`（或留空）
-6. 点击「版本管理与发布」→ 创建版本 → 提交发布 → 等待管理员审批
-7. 在飞书中创建一个群聊，进入群设置 → 机器人 → 添加机器人 → 选择刚创建的应用
-8. 在群中发一条任意消息
-9. 用以下命令获取 Chat ID：
+**APP_ID 和 APP_SECRET** — 从飞书开放平台获取：
+- 打开 https://open.feishu.cn/app
+- **已有应用**：点开应用 → 「凭证与基础信息」→ 复制
+- **新建应用**：点「创建企业自建应用」→ 填名称创建 → 同上位置获取
+- 默认权限就够用，不需要额外配置
+
+**CHAT_ID** — 机器人所在群聊的 ID：
+1. 飞书中建个群（或用已有群）
+2. 群设置 → 添加机器人 → 选择刚创建的应用
+3. 群里发条消息
+4. 用以下命令获取 Chat ID：
    ```bash
-   # 获取 token
+   # 获取 tenant_access_token
    curl -X POST 'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal' \
      -H 'Content-Type: application/json' \
      -d '{"app_id":"<APP_ID>","app_secret":"<APP_SECRET>"}'
    
-   # 获取群列表，找到目标群的 chat_id（以 oc_ 开头）
+   # 获取群列表，找目标群的 chat_id（oc_ 开头）
    curl 'https://open.feishu.cn/open-apis/im/v1/chats' \
      -H 'Authorization: Bearer <TOKEN>'
    ```
@@ -95,6 +103,8 @@ python speak.py "配置完成，语音播报已上线"
 ### 这是什么
 
 一个让 AI Agent 能通过飞书发送语音消息的工具。
+
+> 💡 **使用方式**：把这个仓库链接发给你的 AI Agent，让它帮你完成配置。
 
 工作流程：`文字 → TTS(生成MP3) → FFmpeg(转码Opus) → 飞书API(发送语音消息)`
 

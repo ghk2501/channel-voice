@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Echo Voice - 通过飞书发送 TTS 语音消息
+Channel Voice - 通过飞书发送 TTS 语音消息
 
 用法:
   python speak.py "要说的话"
@@ -16,7 +16,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.config import get_config
-from src.tts import create_engine, convert_to_opus, estimate_ogg_duration_ms
+from src.tts import create_engine, convert_to_opus, get_ogg_duration_ms, MAX_TEXT_LENGTH
 from src.feishu import FeishuClient
 
 
@@ -46,6 +46,10 @@ def main():
         print("[错误] 文本不能为空", file=sys.stderr)
         sys.exit(1)
 
+    if len(text) > MAX_TEXT_LENGTH:
+        print(f"[错误] 文本过长 ({len(text)} chars)，上限 {MAX_TEXT_LENGTH} 字符，请分段发送", file=sys.stderr)
+        sys.exit(1)
+
     preview = text[:60]
     print(f"[语音] {preview}{'...' if len(text) > 60 else ''}")
 
@@ -67,7 +71,7 @@ def main():
         print("失败")
         sys.exit(1)
     ogg_size = os.path.getsize(ogg_path)
-    duration_ms = estimate_ogg_duration_ms(ogg_path)
+    duration_ms = get_ogg_duration_ms(ogg_path, cfg.ffmpeg_path)
     os.remove(mp3_path)
     print(f"完成 ({ogg_size / 1024:.0f}KB, {duration_ms // 1000}s)")
 

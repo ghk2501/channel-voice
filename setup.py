@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Echo Voice 部署助手 - AI Agent 调用的配置工具
+Channel Voice 部署助手 - AI Agent 调用的配置工具
 
 用法:
   python setup.py providers          # 列出可用供应商
