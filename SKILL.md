@@ -1,8 +1,8 @@
 ---
-description: 给 AI Agent 频道增加 TTS 语音播报能力。AI 引导用户选择供应商、获取飞书和 TTS 凭证、自动写入配置、测试发语音。
+description: 给 AI Agent 频道增加 TTS 语音消息能力。AI 引导用户选择供应商、获取飞书和 TTS 凭证、自动写入配置、测试发语音。Let Agent Speak In Channel.
 ---
 
-# Echo Voice — AI 语音播报部署 Skill
+# Channel Voice — AI 语音消息推送部署 Skill
 
 ## 触发场景
 
@@ -55,7 +55,7 @@ python setup.py write VOLC_SPEAKER=<音色ID>        # 仅volc
 python setup.py check
 python setup.py test
 pip install -r requirements.txt
-python speak.py "配置完成，语音播报已上线"
+python speak.py "配置完成，语音消息已上线"
 ```
 
 ### 4. 告知
