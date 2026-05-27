@@ -134,3 +134,9 @@ python speak.py "你好，世界"
 - Python 3.8+
 - FFmpeg（音频转码）
 - 网络连接
+
+---
+
+## 致谢
+
+- 双视角 README（AI + 人类）布局受 [claude-vision-skill](https://github.com/asuojun/claude-vision-skill) 启发
