@@ -28,6 +28,14 @@ class Config:
     volc_resource_id: str = "seed-tts-2.0"
     volc_speaker: str = ""
 
+    # Channel: feishu / telegram / dingtalk
+    channel: str = "feishu"
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+    dingtalk_key: str = ""
+    dingtalk_secret: str = ""
+    dingtalk_chat_id: str = ""
+
     @classmethod
     def from_env(cls, env_file: Optional[str] = None) -> "Config":
         if env_file and os.path.exists(env_file):
@@ -56,6 +64,13 @@ class Config:
         if spk:
             cfg.volc_speaker = spk
 
+        cfg.channel = os.getenv("CHANNEL", "feishu")
+        cfg.telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+        cfg.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
+        cfg.dingtalk_key = os.getenv("DINGTALK_KEY", "")
+        cfg.dingtalk_secret = os.getenv("DINGTALK_SECRET", "")
+        cfg.dingtalk_chat_id = os.getenv("DINGTALK_CHAT_ID", "")
+
         return cfg
 
     def validate(self) -> list[str]:
@@ -71,6 +86,18 @@ class Config:
                 missing.append("VOLC_API_KEY")
             if not self.volc_speaker:
                 missing.append("VOLC_SPEAKER")
+        if self.channel == "telegram":
+            if not self.telegram_bot_token:
+                missing.append("TELEGRAM_BOT_TOKEN")
+            if not self.telegram_chat_id:
+                missing.append("TELEGRAM_CHAT_ID")
+        if self.channel == "dingtalk":
+            if not self.dingtalk_key:
+                missing.append("DINGTALK_KEY")
+            if not self.dingtalk_secret:
+                missing.append("DINGTALK_SECRET")
+            if not self.dingtalk_chat_id:
+                missing.append("DINGTALK_CHAT_ID")
         return missing
 
 
