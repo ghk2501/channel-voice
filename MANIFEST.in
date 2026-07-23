@@ -1,0 +1,8 @@
+include README.md
+include CHANGELOG.md
+include UPGRADE.md
+include LICENSE
+include .env.example
+graft src
+graft examples
+global-exclude __pycache__
