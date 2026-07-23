@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Smoke test
+        run: |
+          echo "=== Version ==="
+          python -c "from src import __version__; print('OK: ' + __version__)"
+          echo "=== TTS ==="
+          python -c "from src.tts import EdgeTTS, VolcTTS, create_engine; print('OK')"
+          echo "=== Channel ==="
+          python -c "from src.channel import FeishuChannel, TelegramChannel, create_channel; print('OK')"
+          echo "=== Audio ==="
+          python -c "from src.audio import split_text; print('OK')"
+          echo "=== SDK ==="
+          python -c "from src import VoiceGateway; print('OK')"
+          echo "=== All checks passed ==="
